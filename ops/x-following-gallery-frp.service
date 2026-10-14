@@ -1,0 +1,13 @@
+[Unit]
+Description=X following gallery OAuth callback FRP tunnel (xauth -> https://xauth.ranlei.work)
+After=network-online.target frps.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/home/claude/App/frp/frpc -c /home/claude/.config/frp/x-following-gallery.toml
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=default.target

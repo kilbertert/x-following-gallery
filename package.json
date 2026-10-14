@@ -1,0 +1,21 @@
+{
+  "name": "x-following-gallery",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Archive your own X (Twitter) following list into a static, edge-cached gallery site",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "authorize": "node scripts/x-authorize.mjs",
+    "sync": "node scripts/sync.mjs",
+    "sync:dry": "node scripts/sync.mjs --dry-run",
+    "demo": "node scripts/demo-data.mjs",
+    "preview": "node scripts/preview.mjs",
+    "publish": "node scripts/publish.mjs",
+    "test": "node --test \"scripts/test/*.test.mjs\"",
+    "mirror-media": "node scripts/mirror-media.mjs",
+    "status": "node scripts/status.mjs"
+  }
+}

@@ -1,0 +1,29 @@
+# frpc.toml.template — copy to ~/.config/frp/x-following-gallery.toml (chmod 600)
+#
+# Publishes the one-time OAuth2 callback receiver to https://xauth.ranlei.work
+#
+#   browser → Cloudflare (edge TLS, *.ranlei.work)
+#           → nginx 443 (CF Origin cert)      /etc/nginx/sites-enabled/frp-demo
+#           → frps vhost :8188                 subDomainHost = ranlei.work
+#           → frpc (this file)                 systemd user unit below
+#           → 127.0.0.1:12110                  scripts/x-authorize.mjs listens here
+#
+# Run scripts/wire-tunnel.sh to generate this file with real secrets filled in.
+serverAddr = "__FRP_SERVER__"
+serverPort = __FRP_PORT__
+auth.method = "token"
+auth.token = "__FRP_TOKEN__"
+transport.tls.enable = true
+loginFailExit = false
+
+[[proxies]]
+name = "x-following-gallery"
+type = "http"
+localIP = "127.0.0.1"
+localPort = 12110
+subdomain = "xauth"
+# Tunnel-layer Basic Auth. frpc does NOT expand {{ .Envs.X }} here (verified on
+# this host — the proxy refuses to start), so this must be a literal and the
+# file must stay 0600.
+httpUser = "__CALLBACK_USER__"
+httpPassword = "__CALLBACK_PASSWORD__"

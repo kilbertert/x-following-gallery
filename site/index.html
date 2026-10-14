@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="oled">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>X 关注画廊 · 博主精选</title>
+<meta name="description" content="X (Twitter) 关注列表精选画廊与全量博主归档系统">
+<meta name="color-scheme" content="dark light">
+<link rel="icon" type="image/svg+xml" href="logo-icon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<canvas id="stars" aria-hidden="true"></canvas>
+
+<header class="site-header">
+  <div class="header-inner">
+    <div class="brand">
+      <img class="brand-logo" src="logo-icon.svg" alt="" width="36" height="36">
+      <div class="brand-text">
+        <h1>X 关注画廊</h1>
+        <span class="brand-sub">关注列表 · 去重备份</span>
+      </div>
+    </div>
+
+    <div class="header-search">
+      <input id="search" type="search" placeholder="搜索 名称 / @handle / 简介" autocomplete="off" spellcheck="false">
+      <kbd>/</kbd>
+    </div>
+
+    <div class="header-right">
+      <button id="luckBtn" class="btn-primary" title="随机抽一位博主 (R)">🎲 随机探索</button>
+      <button id="themeBtn" class="icon-btn" title="切换主题 (T)" aria-label="切换主题">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path class="icon-sun" d="M12 4v2m0 12v2M4 12H2m20 0h-2M6.3 6.3 4.9 4.9m14.2 14.2-1.4-1.4M6.3 17.7l-1.4 1.4M19.1 4.9l-1.4 1.4"/><circle class="icon-sun" cx="12" cy="12" r="4"/><path class="icon-moon" d="M20 14.5A8 8 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5Z"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section class="hero">
+    <p class="eyebrow">CURATED DISCOVERY VAULT</p>
+    <h2 class="hero-title">我的 X 关注 · 全量归档</h2>
+    <p class="hero-tagline">高品质 X (Twitter) 创作者画廊 · 去重备份 · 实时探索与智能推荐</p>
+
+    <div class="metrics" id="metrics">
+      <div class="metric"><span class="metric-value" id="mTotal">0</span><span class="metric-label">归档总数</span></div>
+      <div class="metric"><span class="metric-value" id="mVerified">0</span><span class="metric-label">蓝标认证</span></div>
+      <div class="metric"><span class="metric-value" id="mTop">0</span><span class="metric-label">50万+ 头部</span></div>
+      <div class="metric"><span class="metric-value" id="mKnown">0</span><span class="metric-label">10万+ 创作者</span></div>
+      <div class="metric"><span class="metric-value" id="mMax">—</span><span class="metric-label">最高粉丝</span></div>
+      <div class="metric"><span class="metric-value" id="mDead">0</span><span class="metric-label">赛博坟场</span></div>
+    </div>
+    <p class="curator" id="curator"></p>
+  </section>
+
+  <section class="spotlight" id="spotlight" hidden>
+    <div class="spotlight-thumb"><img id="spAvatar" alt="" loading="lazy"></div>
+    <div class="spotlight-body">
+      <div class="spotlight-eyebrow">
+        <span class="spark">今日精选</span>
+        <button id="shuffleBtn" class="btn-ghost" title="换一位 (R)">换一位推荐 ⟳</button>
+      </div>
+      <h3 class="spotlight-name" id="spName">—</h3>
+      <p class="spotlight-bio" id="spBio"></p>
+      <div class="spotlight-actions">
+        <a id="spLink" class="btn-outline" target="_blank" rel="noopener noreferrer">访问 X ↗</a>
+        <button id="spDetail" class="btn-ghost">时光档案</button>
+      </div>
+    </div>
+    <img class="spotlight-banner" id="spBanner" alt="" loading="lazy">
+  </section>
+
+  <section class="gallery" id="gallery">
+    <div class="filter-row">
+      <div class="pills" id="pills" role="tablist"></div>
+      <div class="view-switch" id="viewSwitch" role="group" aria-label="视图模式">
+        <button data-view="grid" class="active" title="标准视图 (1)">▦</button>
+        <button data-view="compact" title="紧凑视图 (2)">▤</button>
+        <button data-view="list" title="列表视图 (3)">☰</button>
+      </div>
+    </div>
+
+    <div class="meta-row">
+      <span class="result-count" id="resultCount">—</span>
+      <label class="sort-wrap">
+        <select id="sort">
+          <option value="followers_desc">粉丝数从高到低</option>
+          <option value="followers_asc">粉丝数从低到高</option>
+          <option value="name_asc">博主名称 (A → Z)</option>
+          <option value="archived_desc">归档时间最近</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="wall grid-view" id="wall" aria-live="polite"></div>
+    <div class="sentinel" id="sentinel"><span class="spinner"></span></div>
+    <p class="empty" id="empty" hidden>
+      <strong>未找到匹配的博主</strong>
+      <span id="emptyHint">试试换个关键词，或点「随机探索」。</span>
+    </p>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <p>本站仅为社交网络公开资料的技术性归档与索引系统，不存储、不分发任何第三方多媒体资源。</p>
+  <p class="footer-meta" id="footerMeta"></p>
+</footer>
+
+<button id="toTop" class="to-top" title="回到顶部" aria-label="回到顶部" hidden>↑</button>
+
+<!-- Roulette / detail modal -->
+<div class="modal" id="modal" hidden>
+  <div class="modal-backdrop" data-close></div>
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <button class="modal-close" data-close aria-label="关闭">✕</button>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+
+<script src="env-config.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

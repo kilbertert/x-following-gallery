@@ -1,0 +1,39 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: 语法检查（全部脚本）
+        run: for f in scripts/*.mjs scripts/lib/*.mjs; do node --check "$f"; done
+
+      - name: 单元测试（SigV4 签名已知答案）
+        run: node --test "scripts/test/*.test.mjs"
+
+      - name: 自检（归档对账 / R2 规划）
+        run: |
+          node scripts/lib/archive.mjs
+          node scripts/lib/r2.mjs
+
+      - name: 生成演示数据（证明全新克隆即可用，无需任何凭据）
+        run: node scripts/demo-data.mjs --n 24 --force
+
+      - name: 演示数据可用性冒烟
+        run: |
+          node -e "
+            const r = require('./site/data/archive.json');
+            if (!Array.isArray(r) || r.length < 24) { console.error('demo data malformed'); process.exit(1); }
+            const cfg = require('./site/runtime-config.json');
+            if (typeof cfg.r2_public_domain !== 'string') { console.error('runtime-config malformed'); process.exit(1); }
+            console.log('ok:', r.length, 'demo records');
+          "

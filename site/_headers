@@ -1,0 +1,31 @@
+# Cloudflare Pages custom headers.
+# The strict CSP is deliberate: it closes the XSS hole that hit the site this
+# project is modelled on (that incident leaked a logged-in session). Content is
+# escaped in app.js and no inline <script> or inline event handler is used.
+#
+# static.cloudflareinsights.com is allowed because Cloudflare's edge injects its
+# own Web Analytics beacon into HTML served to browsers (zone-level RUM). With a
+# bare `script-src 'self'` that injection is blocked and logs a CSP violation on
+# every page load. Allowing exactly that origin keeps the CSP meaningful — the
+# only script it admits is Cloudflare's own, not attacker-controlled content.
+/*
+  Content-Security-Policy: default-src 'self'; script-src 'self' https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://cloudflareinsights.com; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: no-referrer
+  Permissions-Policy: geolocation=(), microphone=(), camera=(), payment=()
+
+/data/*
+  Cache-Control: public, max-age=300, s-maxage=3600, stale-while-revalidate=86400
+
+/runtime-config.json
+  Cache-Control: public, max-age=60, s-maxage=300
+
+/env-config.js
+  Cache-Control: public, max-age=300, s-maxage=3600
+
+/*.css
+  Cache-Control: public, max-age=600, s-maxage=86400
+
+/*.js
+  Cache-Control: public, max-age=600, s-maxage=86400

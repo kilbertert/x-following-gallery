@@ -1,0 +1,17 @@
+# ---- Secrets ----------------------------------------------------------------
+.env
+.env.*
+!.env.example
+
+# ---- Data: never in the public repo ----------------------------------------
+# site/data holds the REAL archive (real people's profiles) and its change
+# history. It is the site's runtime data, not source. It lives in the private
+# companion repo kilbertert/x-following-gallery-data and on the deploy host.
+# A fresh clone runs `npm run demo` to generate demonstration data instead.
+site/data/
+
+# ---- Build / runtime --------------------------------------------------------
+node_modules/
+.wrangler/
+*.log
+.last-sync

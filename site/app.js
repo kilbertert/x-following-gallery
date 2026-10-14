@@ -153,6 +153,27 @@
       if (cached && cached.r2_public_domain) ENV.R2_PUBLIC_DOMAIN = cached.r2_public_domain;
     }
   }
+  /** 4 skeleton cards matching real card geometry, shown while the grid loads. */
+  function showSkeleton() {
+    const wall = $('wall');
+    if (wall.querySelector('.masonry-column')) return;      // already has content
+    const frag = document.createDocumentFragment();
+    for (let i = 0; i < 4; i++) {
+      const c = el('div', 'masonry-column');
+      const sk = el('div', 'skeleton-card', `
+        <div class="sk-banner"></div>
+        <div class="sk-avatar"></div>
+        <div class="sk-body">
+          <div class="sk-line w-70"></div>
+          <div class="sk-line w-40"></div>
+          <div class="sk-line w-90"></div>
+        </div>`);
+      c.appendChild(sk); frag.appendChild(c);
+    }
+    wall.appendChild(frag);
+    $('sentinel').hidden = true;
+  }
+
   async function loadData() {
     const cached = readCache(CACHE_KEY);
     const fresh = cached && Date.now() - cached._at < CACHE_TTL;
@@ -365,11 +386,19 @@
     // Strict `<` (not `<=`) is deliberate: on a tie the *earlier* column wins, so
     // the highest-ranked card lands top-left. With `<=` the first card would be
     // pushed to the last column and the #1 account would render bottom-right.
+    const firstPaint = state.rendered === 0;
     for (const a of slice) {
       const target = state.view === 'list'
         ? cols[0]
         : cols.reduce((shortest, c) => (c.offsetHeight < shortest.offsetHeight ? c : shortest), cols[0]);
-      target.appendChild(buildCard(a));
+      const card = buildCard(a);
+      // Stagger only the first screenful: cards appended by infinite scroll are
+      // already in view, so a delay on them would just look laggy.
+      if (firstPaint && !prefersReducedMotion()) {
+        card.style.setProperty('--i', String(state.rendered));
+        card.classList.add('enter');
+      }
+      target.appendChild(card);
       state.rendered++;
     }
     finalizeWall();
@@ -605,11 +634,14 @@
 
   async function boot() {
     initTheme();
+    showSkeleton();
     starfield();
     initKeys();
     initScroll();
 
-    // one capture-phase listener covers every <img>, including re-rendered cards
+    // One capture-phase pair covers every <img>, including re-rendered cards.
+    // The load half is the blur-up: images start transparent and fade in, so a
+    // gallery of remote avatars doesn't pop in raggedly.
     document.addEventListener('error', (e) => {
       if (e.target && e.target.tagName === 'IMG') applyImgFallback(e.target);
     }, true);
@@ -624,6 +656,9 @@
       setTheme(document.documentElement.dataset.theme === 'oled' ? 'light' : 'oled'));
     [...$('viewSwitch').children].forEach((b) => { b.onclick = () => setView(b.dataset.view); });
     $('modal').addEventListener('click', (e) => { if (e.target.closest('[data-close]')) closeModal(); });
+    $('emptyReset').addEventListener('click', () => {
+      $('search').value = ''; state.query = ''; state.filter = 'all'; updateCounts(); refilter();
+    });
     $('curator').textContent = ENV.OWNER_HANDLE ? `策展人 · @${ENV.OWNER_HANDLE}` : '';
     $('footerMeta').textContent = `数据生成于 ${fmtDate(ENV.GENERATED_AT)} · 静态托管 · 边缘缓存`;
 
@@ -631,6 +666,7 @@
     await loadData();                      // render() is called from inside
     updateCounts();
   }
+  const prefersReducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const debounce = (fn, ms) => { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; };
 
   if (document.readyState === 'loading') addEventListener('DOMContentLoaded', boot);

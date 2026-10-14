@@ -24,19 +24,13 @@
 /env-config.js
   Cache-Control: public, max-age=300, s-maxage=3600
 
+# Long cache is SAFE here only because index.html fingerprints these URLs
+# (`app.js?v=<content-hash>`): a change produces a new URL, so no cache can serve
+# stale bytes. Without that fingerprinting this rule would re-create the bug where
+# a deployed fix looked undeployed. index.html is served no-cache, so it always
+# re-reads and points at the current hashes.
 /*.css
   Cache-Control: public, max-age=31536000, immutable
 
 /*.js
   Cache-Control: public, max-age=31536000, immutable
-
-# The hashed URLs above (app.js?v=<hash>) are safe to cache forever. These exact
-# paths are listed AFTER the globs so they win for the un-hashed form: a browser
-# holding a stale index.html, or a direct hit on /app.js, must revalidate rather
-# than reuse a year-old body. (This is the failure that made a shipped fix look
-# unshipped — the edge kept serving the previous app.js.)
-/app.js
-  Cache-Control: public, max-age=0, must-revalidate
-
-/style.css
-  Cache-Control: public, max-age=0, must-revalidate

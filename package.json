@@ -14,7 +14,7 @@
     "demo": "node scripts/demo-data.mjs",
     "preview": "node scripts/preview.mjs",
     "publish": "node scripts/publish.mjs",
-    "test": "node --test \"scripts/test/*.test.mjs\"",
+    "test": "node --test scripts/test/*.test.mjs",
     "mirror-media": "node scripts/mirror-media.mjs",
     "status": "node scripts/status.mjs"
   }

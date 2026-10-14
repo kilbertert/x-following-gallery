@@ -15,3 +15,7 @@ node_modules/
 .wrangler/
 *.log
 .last-sync
+
+# Generated at sync/demo time (site/env-config.example.js is the template)
+site/env-config.js
+site/runtime-config.json

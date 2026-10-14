@@ -22,6 +22,7 @@ import { existsSync, mkdtempSync, cpSync, rmSync, readdirSync, statSync } from '
 import { join, relative } from 'node:path';
 import { tmpdir } from 'node:os';
 import { SITE, loadEnv, saveEnvVars, parseArgs, log, warn, ROOT } from './lib/config.mjs';
+import { hashAssets } from './lib/hash-assets.mjs';
 
 const args = parseArgs();
 if (args.help) { log('用法见 scripts/publish.mjs 顶部注释'); process.exit(0); }
@@ -39,6 +40,9 @@ if (!existsSync(dataFile)) {
 // ---- stage site/ outside git -------------------------------------------------
 const staging = mkdtempSync(join(tmpdir(), 'xfg-deploy-'));
 cpSync(SITE, staging, { recursive: true });
+// Fingerprint against the ACTUAL bytes being uploaded — hash the staging copy,
+// not SITE, so the version in index.html always matches what lands on the CDN.
+hashAssets({ site: staging });
 const walk = (dir) => readdirSync(dir, { withFileTypes: true }).flatMap((e) =>
   e.isDirectory() ? walk(join(dir, e.name)) : [join(dir, e.name)]);
 const files = walk(staging).map((f) => relative(staging, f)).sort();

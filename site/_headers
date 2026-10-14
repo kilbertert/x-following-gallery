@@ -25,7 +25,18 @@
   Cache-Control: public, max-age=300, s-maxage=3600
 
 /*.css
-  Cache-Control: public, max-age=600, s-maxage=86400
+  Cache-Control: public, max-age=31536000, immutable
 
 /*.js
-  Cache-Control: public, max-age=600, s-maxage=86400
+  Cache-Control: public, max-age=31536000, immutable
+
+# The hashed URLs above (app.js?v=<hash>) are safe to cache forever. These exact
+# paths are listed AFTER the globs so they win for the un-hashed form: a browser
+# holding a stale index.html, or a direct hit on /app.js, must revalidate rather
+# than reuse a year-old body. (This is the failure that made a shipped fix look
+# unshipped — the edge kept serving the previous app.js.)
+/app.js
+  Cache-Control: public, max-age=0, must-revalidate
+
+/style.css
+  Cache-Control: public, max-age=0, must-revalidate

@@ -43,6 +43,10 @@ const records = Array.from({ length: N }, (_, i) => {
   const bio = BIOS[i % BIOS.length];
   const links = ['https://example.dev/blog', 'https://linktr.ee/demo', 'https://t.co/DEMO1', 'https://lit.link/shoot']
     .filter((u) => bio.includes(u.split('://')[1].split('/')[0]));
+  // Timestamps must be internally consistent — an account cannot be archived
+  // before it was first seen, or its timeline renders "进入坟场" above "首次归档".
+  const backedUpMs = now.getTime() - (i % 20) * 864e5;
+  const archivedMs = dead ? Math.max(backedUpMs + 864e5, now.getTime() - 3 * 864e5) : null;
   return {
     id, screen_name: handle, name,
     avatar_url: avatar(i + 1, (i * 37) % 360),
@@ -57,9 +61,9 @@ const records = Array.from({ length: N }, (_, i) => {
     verified: verified ? 1 : 0,
     verified_type: verified ? 'blue' : null,
     links, tags: links.map((u) => { try { return new URL(u).hostname.replace(/^www\./, ''); } catch { return null; } }).filter(Boolean),
-    backed_up_at: new Date(now - (i % 20) * 864e5).toISOString(),
+    backed_up_at: new Date(backedUpMs).toISOString(),
     last_synced_at: now.toISOString(),
-    archived_at: dead ? new Date(now - 7 * 864e5).toISOString() : null,
+    archived_at: archivedMs ? new Date(archivedMs).toISOString() : null,
     removal_reason: dead ? (i % 2 ? 'suspended' : 'unfollowed') : null,
     is_suspended: dead && i % 2 ? 1 : 0,
     is_blocked: 0,   // cause is unknowable without --classify; archived_at drives the graveyard
@@ -88,6 +92,47 @@ if (existsSync(DATA_FILE)) {
   }
 }
 writeFileSync(DATA_FILE, JSON.stringify(records));
+
+// ---- change timeline (site/data/history.json) -------------------------------
+// Generated from the same records so a fresh clone sees the 时光档案 feature
+// without needing real data. Deliberately exercises all four event types:
+// added / updated / archived / restored — otherwise a demo visitor would only
+// ever see "首次归档" and never learn the timeline can show more.
+const day = (ms) => new Date(ms).toISOString();
+const events = [];
+const push = (id, r, ts, event, detail) => events.push({
+  ts: day(ts), id, screen_name: r.screen_name, name: r.name, event, ...(detail ? { detail } : {}),
+});
+records.forEach((r, i) => {
+  const base = Date.parse(r.backed_up_at);
+  const archivedAt = r.archived_at ? Date.parse(r.archived_at) : null;
+  push(r.id, r, base, 'added');
+
+  if (archivedAt) {
+    push(r.id, r, archivedAt, 'archived',
+      { reason: r.is_suspended ? 'suspended' : r.is_blocked ? 'deleted' : 'unfollowed' });
+    // every third dead account came back — otherwise 'restored' never shows
+    if (i % 3 === 0) {
+      const back = Math.min(now.getTime(), archivedAt + 2 * 864e5);
+      push(r.id, r, back, 'restored');
+      r.archived_at = null; r.removal_reason = null;   // keep record consistent with its timeline
+      r.is_suspended = 0; r.is_blocked = 0;
+    }
+  } else if (i % 4 === 1) {
+    // a tier crossing — the kind of update that is worth recording (see archive.mjs)
+    const from = ['rest', 'known'][i % 2] === 'rest' ? '普通账号' : '知名创作者 (10万+)';
+    const to = from === '普通账号' ? '知名创作者 (10万+)' : 'Top 头部 (50万+)';
+    push(r.id, r, base + 5 * 864e5, 'updated', { tier: { from, to } });
+  } else if (i % 4 === 2) {
+    push(r.id, r, base + 3 * 864e5, 'updated', { verified: { from: false, to: true } });
+  }
+});
+events.sort((a, b) => a.ts.localeCompare(b.ts));
+writeFileSync(resolve(SITE, 'data/history.json'), JSON.stringify(events));
+// The records were amended above (some came back from the graveyard), so rewrite
+// them — the archive and its timeline must not disagree.
+writeFileSync(DATA_FILE, JSON.stringify(records));
+
 // Both generated config files are written so a fresh clone works end to end
 // without any credentials: the site reads env-config.js for the media domain,
 // and mirror-media.mjs keeps it in step with runtime-config.json.

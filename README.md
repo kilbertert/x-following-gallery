@@ -77,19 +77,38 @@ x-following-gallery/
 ├── site/                     # 部署产物（整目录上传，无构建步骤）
 │   ├── index.html  app.js  style.css  logo-icon.svg
 │   ├── _headers              # 严格 CSP —— 关掉参考站中过的 XSS 那一类风险
-│   ├── env-config.js         # 生成物：R2 域名 / 账号 handle / 生成时间
-│   ├── runtime-config.json   # 生成物：同上，供运行时读取
-│   └── data/archive.json     # 生成物：归档数据（版本化的备份本体）
+│   ├── env-config.example.js       # 生成物模板（真实文件不入库）
+│   ├── runtime-config.example.json # 生成物模板（真实文件不入库）
+│   └── data/                 # **不入库**：真实归档。见下「数据与两个仓库」
 ├── scripts/
 │   ├── x-authorize.mjs       # 一次性 OAuth2 授权
 │   ├── sync.mjs              # 主流程：抓取 → 对账 → 镜像 → 落盘
-│   ├── demo-data.mjs         # 演示数据
+│   ├── mirror-media.mjs      # 只镜像图片到 R2（不碰 X API，零 API 费用）
+│   ├── status.mjs            # 健康体检（离线只读，一屏看全部）
+│   ├── demo-data.mjs         # 演示数据（克隆后即可预览）
 │   ├── preview.mjs           # 本地静态服务（会应用 _headers 的 CSP）
-│   ├── publish.mjs           # wrangler pages deploy 的薄封装
+│   ├── publish.mjs           # 发布（先暂存到 git 之外，再 wrangler deploy）
 │   ├── lib/{x-api,archive,r2,config}.mjs
 │   └── test/r2.test.mjs
+├── ops/                      # OAuth 回调的 frp 隧道接线（wire-tunnel.sh）
 └── docs/{DEPLOY.md,ARCHITECTURE.md}
 ```
+
+## 数据与两个仓库
+
+**真实数据不进本仓库。** `site/data/`（`archive.json` + `history.json`）是本
+站点运行时的数据，内容是真人账号的公开资料，所以它：
+
+- 被本仓 `.gitignore` 排除；
+- 单独放在**私有**数据仓（本机部署为 `kilbertert/x-following-gallery-data`），
+  由 `sync-daily.sh` 每天提交一次——那才是"备份"本体。
+
+克隆本仓后 `npm run demo` 会生成一份演示数据，足以本地预览与验证。要跑真实
+数据，需要自己的 X 开发者应用与 Cloudflare 账号（见 `docs/DEPLOY.md`）。
+
+> 部署时 `scripts/publish.mjs` 会把 `site/` **先暂存到 git 仓库之外**再上传。
+> 这一步不能省：`wrangler pages deploy` 会遵守 `.gitignore`，就地部署会在
+> "部署成功"的同时悄悄发出去一个空画廊。
 
 ## 设计取舍（为什么这么搭）
 

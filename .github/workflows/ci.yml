@@ -18,7 +18,11 @@ jobs:
         run: for f in scripts/*.mjs scripts/lib/*.mjs; do node --check "$f"; done
 
       - name: 单元测试（SigV4 签名已知答案）
-        run: node --test "scripts/test/*.test.mjs"
+        # Unquoted so the shell expands the glob. A quoted glob reaches Node
+        # verbatim and Node does not expand it (misleading "cannot find module"),
+        # and a bare directory is not accepted either. The glob is unambiguous
+        # with exactly one matching file.
+        run: node --test scripts/test/*.test.mjs
 
       - name: 自检（归档对账 / R2 规划）
         run: |

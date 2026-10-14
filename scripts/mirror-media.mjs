@@ -18,6 +18,7 @@ import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { mediaPlan } from './lib/archive.mjs';
 import { R2Bucket, mirrorMedia } from './lib/r2.mjs';
+import { hashAssets } from './lib/hash-assets.mjs';
 import { DATA_FILE, SITE, loadEnv, parseArgs, log, warn, R2_CREDS } from './lib/config.mjs';
 
 const args = parseArgs();
@@ -96,6 +97,8 @@ writeFileSync(resolve(SITE, 'env-config.js'),
     R2_PUBLIC_DOMAIN: cfg.r2_public_domain, OWNER_HANDLE: cfg.owner_handle, GENERATED_AT: cfg.generated_at,
   }, null, 2)});\n`);
 log(`✔ 站点配置已更新：R2_PUBLIC_DOMAIN=${cfg.r2_public_domain || '(空!)'}`);
+const h = hashAssets();
+log(h.changed ? `✔ 资源已指纹化：${JSON.stringify(h.hashes)}` : '  资源指纹无变化');
 
 if (result.failed.length) {
   const byReason = {};

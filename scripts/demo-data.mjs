@@ -69,10 +69,21 @@ const records = Array.from({ length: N }, (_, i) => {
 });
 
 mkdirSync(dirname(DATA_FILE), { recursive: true });
-if (existsSync(DATA_FILE) && !args.force) {
-  const prev = JSON.parse(readFileSync(DATA_FILE, 'utf8'));
-  if (Array.isArray(prev) && prev.length > N && prev.some((r) => r.last_synced_at && !String(r.avatar_url).startsWith('data:'))) {
-    log(`⚠ ${DATA_FILE} 看起来是真实同步数据（${prev.length} 条），拒绝覆盖。加 --force 才会替换。`);
+// Distinguishing real data from demo data is a judgement call — demo avatars are
+// inline SVG, real ones point at /media or twimg. Getting that heuristic wrong
+// once is cheap; getting it wrong in the destructive direction loses a backup.
+// So overwriting REAL data needs a separate, unmistakable flag: `--force`
+// (which is routine for regenerating demo data) is deliberately not enough.
+const looksReal = (arr) => Array.isArray(arr) && arr.some(
+  (r) => r && typeof r.avatar_url === 'string' && r.avatar_url && !r.avatar_url.startsWith('data:'));
+if (existsSync(DATA_FILE)) {
+  let prev = null;
+  try { prev = JSON.parse(readFileSync(DATA_FILE, 'utf8')); } catch { /* unreadable → treat as overwritable */ }
+  if (looksReal(prev) && !args['i-know-this-overwrites-real-data']) {
+    log(`✘ ${DATA_FILE} 看起来是**真实同步数据**（${prev.length} 条），拒绝覆盖。`);
+    log('  这是备份本体。确实要清掉它、换成演示数据，请显式加：');
+    log('      --i-know-this-overwrites-real-data');
+    log('  想保留真实数据的日常工作请用 npm run sync / npm run mirror-media。');
     process.exit(1);
   }
 }

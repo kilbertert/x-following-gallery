@@ -57,7 +57,11 @@ const records = Array.from({ length: N }, (_, i) => {
     tweets_count: 500 + i * 13,
     description: bio,
     location: i % 4 === 0 ? 'Shanghai' : '',
-    url: `https://x.com/${handle}`,
+    profile_url: `https://x.com/${handle}`,
+    // deliberately a THIRD-PARTY site, mirroring real data (most creators put
+    // an onlyfans/linktree link here) — so the demo exercises the distinction
+    // between "profile page" and "profile website".
+    website_url: links[0] || '',
     verified: verified ? 1 : 0,
     verified_type: verified ? 'blue' : null,
     links, tags: links.map((u) => { try { return new URL(u).hostname.replace(/^www\./, ''); } catch { return null; } }).filter(Boolean),

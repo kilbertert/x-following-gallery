@@ -118,7 +118,16 @@ export function buildRecord(user, prev, now) {
     tweets_count: F(user.public_metrics?.tweet_count),
     description: user.description || '',
     location: user.location || '',
-    url: user.url || `https://x.com/${user.username}`,
+    // The account's own page is DERIVED from the username, never taken from a
+    // stored field. The X API's `url` is "the website in this profile" (entities
+    // .url.urls[0]), which for most accounts is an onlyfans/linktree/t.co link —
+    // using it as the profile link is a category error that sends "访问 X" to a
+    // third-party site. The profile URL is trivially constructible, so construct
+    // it.
+    profile_url: `https://x.com/${user.username}`,
+    // ...and the profile's own website, kept as a *separate*, clearly-named
+    // field for callers that genuinely want it.
+    website_url: user.entities?.url?.urls?.[0]?.expanded_url || user.url || '',
     verified: user.verified ? 1 : 0,
     verified_type: user.verified_type || null,
     account_created_at: user.created_at || null,
@@ -297,6 +306,15 @@ export function demo() {
   // Regression: a query string must not hide the extension (twimg avatars carry one).
   const q = mediaPlan('1', { profile_image_url: 'https://pbs.twimg.com/profile_images/1/hash_normal.jpg?x=1' });
   assert(q.avatar.key === 'media/avatars/1.jpg', 'extension found despite query string');
+
+  // Regression: the profile link must be DERIVED from the username, never taken
+  // from the API's `url` (which is the website in the profile — here an
+  // onlyfans link). Mixing them sent "访问 X" to a third-party site.
+  const pf = buildRecord({ ...u('1', 'ada'), url: 'https://onlyfans.com/ada',
+    entities: { url: { urls: [{ expanded_url: 'https://onlyfans.com/ada' }] } } }, null, now);
+  assert(pf.profile_url === 'https://x.com/ada', 'profile_url derived from username');
+  assert(pf.website_url === 'https://onlyfans.com/ada', 'profile website kept separately');
+  assert(!pf.profile_url.includes('onlyfans'), 'profile_url never a third-party site');
 
   // first sync → all added
   const first = reconcile({ freshUsers: [u('1', 'a'), u('2', 'b')], prevRecords: [], now });

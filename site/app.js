@@ -42,7 +42,22 @@
     const s = String(u == null ? '' : u).trim();
     return /^https?:\/\//i.test(s) ? s : fallback;
   };
-  const xProfile = (a) => safeUrl(a.url, `https://x.com/${encodeURIComponent(a.screen_name || '')}`);
+  /**
+   * The account's page on X. Constructed from the username rather than read
+   * from a stored field: the API's `url` is the website in the profile (often
+   * an onlyfans/linktree link), so trusting it here would send "访问 X" to a
+   * third-party site. `profile_url` is the stored, correct value when present.
+   */
+  const xProfile = (a) => safeUrl(a.profile_url, `https://x.com/${encodeURIComponent(a.screen_name || '')}`);
+  /** Links shown on the drawer: the profile's own website plus any bio links. */
+  const siteLinks = (a) => {
+    const out = [];
+    for (const u of [a.website_url, ...(a.links || [])]) {
+      const safe = safeUrl(u);
+      if (safe && !out.includes(safe)) out.push(safe);
+    }
+    return out.slice(0, 6);
+  };
 
   // ---------------------------------------------------------------- formatting
   const fmtCount = (n) => {
@@ -293,7 +308,7 @@
     c.setAttribute('aria-label', `${a.name || a.screen_name} 详情`);
 
     const t = tier(a.followers_count || 0);
-    const links = (a.links && a.links.length ? a.links : xlinksIn(a.description)).slice(0, 2);
+    const links = (a.links && a.links.length ? a.links : xlinksIn(a.description)).slice(0, 2);   // bio chips only
     c.innerHTML = `
       ${dead ? `<span class="dead-tag">${deadLabel(a)}</span>` : ''}
       <div class="card-banner">
@@ -402,7 +417,7 @@
   // ---------------------------------------------------------------- detail modal
   function openDetail(a) {
     const dead = isDead(a);
-    const links = (a.links && a.links.length ? a.links : xlinksIn(a.description));
+    const links = siteLinks(a);   // profile website + bio links, never the profile itself
     $('modalBody').innerHTML = `
       <div class="modal-hero">${a.cover_url ? `<img src="${esc(media(a.cover_url))}" alt="" data-fallback="blank">` : ''}</div>
       <div class="modal-pad">
